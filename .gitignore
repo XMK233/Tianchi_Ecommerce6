@@ -1,3 +1,4 @@
 plan_0
 *.pyc
 *.ipynb_checkpoints
+*wasted

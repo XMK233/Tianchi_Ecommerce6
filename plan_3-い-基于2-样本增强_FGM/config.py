@@ -20,7 +20,7 @@ class Config:
     TRAIN_LABELS = os.path.join(DATA_ROOT, 'TRAIN', 'Train_labels.csv')
     TEST_REVIEWS = os.path.join(DATA_ROOT, 'TEST', 'Test_reviews.csv')
     
-    BERT_PATH = '/mnt/d/ModelScopeModels/google-bert/bert-base-chinese/'
+    BERT_PATH = '/mnt/d/HuggingFaceModels/models--hfl--chinese-roberta-wwm-ext/'
 
     MAX_LEN = 512
     BATCH_SIZE = 16

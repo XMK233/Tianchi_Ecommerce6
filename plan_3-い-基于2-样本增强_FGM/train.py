@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from torch.optim import AdamW
 from transformers import BertTokenizerFast as BertTokenizer, get_linear_schedule_with_warmup
 from config import Config
-from utils_loc import load_train_data, ExtractionDataset, ClassificationDataset
+from utils_loc import load_train_data, ExtractionDataset, ClassificationDataset, FGM
 from model import ExtractionModel, ClassificationModel
 import os
 import random
@@ -29,6 +29,7 @@ def train_extraction(reviews_df, labels_df, tokenizer, device):
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=total_steps)
     
     model.train()
+    fgm = FGM(model)
     for epoch in range(Config.EPOCHS_EXTRACT):
         total_loss = 0
         for batch in tqdm(loader, desc=f"Epoch {epoch+1}"):
@@ -41,6 +42,13 @@ def train_extraction(reviews_df, labels_df, tokenizer, device):
             model.zero_grad()
             loss, _ = model(input_ids, attention_mask, token_type_ids, labels=labels)
             loss.backward()
+            
+            # FGM Adversarial Training
+            fgm.attack()
+            loss_adv, _ = model(input_ids, attention_mask, token_type_ids, labels=labels)
+            loss_adv.backward()
+            fgm.restore()
+            
             optimizer.step()
             scheduler.step()
             
@@ -126,6 +134,7 @@ def train_classification(reviews_df, labels_df, tokenizer, device):
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=total_steps)
     
     model.train()
+    fgm = FGM(model)
     for epoch in range(Config.EPOCHS_CLASSIFY):
         total_loss = 0
         for batch in tqdm(loader, desc=f"Epoch {epoch+1}"):
@@ -138,6 +147,13 @@ def train_classification(reviews_df, labels_df, tokenizer, device):
             model.zero_grad()
             loss, _, _ = model(input_ids, attention_mask, token_type_ids, cat_labels, pol_labels)
             loss.backward()
+            
+            # FGM Adversarial Training
+            fgm.attack()
+            loss_adv, _, _ = model(input_ids, attention_mask, token_type_ids, cat_labels, pol_labels)
+            loss_adv.backward()
+            fgm.restore()
+            
             optimizer.step()
             scheduler.step()
             

@@ -5,6 +5,29 @@ from transformers import BertTokenizerFast as BertTokenizer
 import numpy as np
 from config import Config
 
+class FGM:
+    def __init__(self, model):
+        self.model = model
+        self.backup = {}
+
+    def attack(self, epsilon=1.0, emb_name='word_embeddings'):
+        # Add perturbation to embedding layer
+        for name, param in self.model.named_parameters():
+            if param.requires_grad and emb_name in name:
+                self.backup[name] = param.data.clone()
+                norm = torch.norm(param.grad)
+                if norm != 0 and not torch.isnan(norm):
+                    r_at = epsilon * param.grad / norm
+                    param.data.add_(r_at)
+
+    def restore(self, emb_name='word_embeddings'):
+        # Restore original embedding
+        for name, param in self.model.named_parameters():
+            if param.requires_grad and emb_name in name:
+                if name in self.backup:
+                    param.data = self.backup[name]
+        self.backup = {}
+
 def load_train_data():
     reviews = pd.read_csv(Config.TRAIN_REVIEWS)
     labels = pd.read_csv(Config.TRAIN_LABELS)
